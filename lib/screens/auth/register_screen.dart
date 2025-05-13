@@ -1,0 +1,130 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/custom_app_bar.dart';
+import '../../widgets/form_field.dart';
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final AuthService _auth = AuthService();
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String _error = '';
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signUp() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        await _auth.registerWithEmailAndPassword(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/main');
+        }
+      } on FirebaseAuthException catch (e) {
+        setState(() {
+          _error = _getErrorMessage(e);
+          _isLoading = false;
+        });
+      } catch (e) {
+        setState(() {
+          _error = 'An unexpected error occurred: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  String _getErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'This email is already in use. Please use a different email.';
+      case 'invalid-email':
+        return 'Invalid email address. Please enter a valid email.';
+      case 'weak-password':
+        return 'The password is too weak. Please use a stronger password.';
+      default:
+        return 'An error occurred: ${e.message}';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const CustomAppBar(title: 'Sign Up', showHomeButton: false),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomFormField(
+                label: 'Email',
+                hint: 'Enter your email',
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) => value!.isEmpty ? 'Please enter your email' : null,
+              ),
+              const SizedBox(height: 16),
+              CustomFormField(
+                label: 'Password',
+                hint: 'Enter your password',
+                controller: _passwordController,
+                obscureText: true,
+                validator: (value) =>
+                value!.length < 6 ? 'Password must be at least 6 characters' : null,
+              ),
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                onPressed: _signUp,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD1C4E9),
+                  foregroundColor: Colors.black87,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text('Sign Up'),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Already have an account? Sign In'),
+              ),
+              if (_error.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    _error,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
