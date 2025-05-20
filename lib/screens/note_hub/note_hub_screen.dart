@@ -53,6 +53,103 @@ class _NoteHubScreenState extends State<NoteHubScreen> {
     }
   }
 
+  void _showFilterModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        String? tempCategory = _categoryFilter;
+        String tempSortBy = _sortBy;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Filter & Sort Notes",
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      Text("Category", style: Theme.of(context).textTheme.titleMedium),
+                      Wrap(
+                        spacing: 8.0,
+                        children: ["All", "School", "Reading", "Work", "Personal"].map((category) {
+                          return ChoiceChip(
+                            label: Text(category),
+                            selected: tempCategory == (category == "All" ? null : category),
+                            onSelected: (selected) {
+                              if (selected) {
+                                setModalState(() {
+                                  tempCategory = category == "All" ? null : category;
+                                });
+                              }
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      Text("Sort By", style: Theme.of(context).textTheme.titleMedium),
+                      Wrap(
+                        spacing: 8.0,
+                        children: ["Created At", "Updated At", "Title"].map((sortOption) {
+                          return ChoiceChip(
+                            label: Text(sortOption),
+                            selected: tempSortBy == sortOption,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setModalState(() {
+                                  tempSortBy = sortOption;
+                                });
+                              }
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _categoryFilter = tempCategory;
+                                _sortBy = tempSortBy;
+                              });
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).elevatedButtonTheme.style?.backgroundColor?.resolve({}),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text("Apply"),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,10 +158,7 @@ class _NoteHubScreenState extends State<NoteHubScreen> {
         actions: [
           TextButton(
             onPressed: () => _addNewNote(context),
-            child: const Text(
-              "New",
-              style: TextStyle(color: Colors.black87),
-            ),
+            child: const Text("New"), // Removed style to use CustomAppBar's dynamic color
           ),
         ],
       ),
@@ -73,55 +167,59 @@ class _NoteHubScreenState extends State<NoteHubScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: "Search Notes",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        labelText: "Search Notes",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            Provider.of<NoteProvider>(context, listen: false).searchNotes('');
+                          },
+                        ),
+                      ),
+                      onChanged: (value) {
+                        if (_debounce?.isActive ?? false) _debounce!.cancel();
+                        _debounce = Timer(const Duration(milliseconds: 300), () {
+                          Provider.of<NoteProvider>(context, listen: false).searchNotes(value);
+                        });
+                      },
+                    ),
                   ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      Provider.of<NoteProvider>(context, listen: false).searchNotes('');
-                    },
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Stack(
+                      children: [
+                        const Icon(Icons.filter_list),
+                        if (_categoryFilter != null || _sortBy != "Updated At")
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Text(
+                                "!",
+                                style: TextStyle(color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    onPressed: () => _showFilterModal(context),
+                    tooltip: "Filter & Sort",
                   ),
-                ),
-                onChanged: (value) {
-                  if (_debounce?.isActive ?? false) _debounce!.cancel();
-                  _debounce = Timer(const Duration(milliseconds: 300), () {
-                    Provider.of<NoteProvider>(context, listen: false).searchNotes(value);
-                  });
-                },
-              ),
-              const SizedBox(height: 8),
-              DropdownButton<String>(
-                hint: const Text("Filter by Category"),
-                value: _categoryFilter,
-                items: ["All", "School", "Reading", "Work", "Personal"].map((category) {
-                  return DropdownMenuItem<String>(
-                    value: category == "All" ? null : category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _categoryFilter = value);
-                },
-              ),
-              const SizedBox(height: 8),
-              DropdownButton<String>(
-                hint: const Text("Sort by"),
-                value: _sortBy,
-                items: ["Created At", "Updated At", "Title"].map((sortOption) {
-                  return DropdownMenuItem<String>(
-                    value: sortOption,
-                    child: Text(sortOption),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _sortBy = value ?? "Updated At");
-                },
+                ],
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -132,10 +230,7 @@ class _NoteHubScreenState extends State<NoteHubScreen> {
                       notes = notes.where((note) => note.category == _categoryFilter).toList();
                     }
                     if (_searchController.text.isNotEmpty) {
-                      notes = notes.where((note) {
-                        return note.title.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-                            note.content.toLowerCase().contains(_searchController.text.toLowerCase());
-                      }).toList();
+                      notes = noteProvider.filteredNotes;
                     }
                     if (notes.isEmpty) {
                       return const Center(child: Text('No notes found'));

@@ -296,9 +296,8 @@ class _TimerViewState extends State<TimerView> with SingleTickerProviderStateMix
                 _formatTime(_secondsRemaining),
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ) ??
-                    const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                  color: Theme.of(context).colorScheme.onSurface, // Dynamic color based on theme
+                ) ?? const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ],
           ),

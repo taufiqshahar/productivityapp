@@ -8,7 +8,6 @@ import '../../providers/theme_provider.dart';
 import '../../screens/task_manager/task_manager_screen.dart';
 import '../../screens/note_hub/note_hub_screen.dart';
 import '../../screens/focus_booster/focus_booster_screen.dart';
-import '../../widgets/custom_app_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -71,7 +70,6 @@ class _HomeScreenState extends State<HomeScreen> {
         } else if (snapshot.hasError) {
           _logger.e('Error in HomeScreen: ${snapshot.error}');
           return Scaffold(
-            appBar: const CustomAppBar(title: 'Error', showHomeButton: false),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -98,11 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         _logger.i('Rendering HomeScreen UI');
         return Scaffold(
-          appBar: CustomAppBar(
-            title: 'Home',
-            showHomeButton: false,
-            actions: [],
-          ),
+          // Removed the appBar property entirely
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),

@@ -31,6 +31,18 @@ class MainScreen extends StatelessWidget {
 
         return Consumer<TabProvider>(
           builder: (context, tabProvider, child) {
+            // Determine colors based on the current theme (light or dark)
+            final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+            final Color selectedColor = isDarkMode
+                ? Colors.deepPurple[200]! // Lighter purple for dark mode
+                : Theme.of(context).colorScheme.primary; // Default deep purple for light mode
+            final Color unselectedColor = isDarkMode
+                ? Colors.grey[400]! // Lighter gray for dark mode
+                : Colors.grey[600]!; // Darker gray for light mode
+            final Color navBarBackgroundColor = isDarkMode
+                ? Colors.grey[900]! // Match scaffold background in dark mode
+                : Colors.grey.shade100; // Match scaffold background in light mode
+
             return Scaffold(
               appBar: CustomAppBar(
                 title: 'Productivity App',
@@ -56,13 +68,9 @@ class MainScreen extends StatelessWidget {
               ),
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: tabProvider.currentIndex,
-                selectedItemColor: Theme.of(context).colorScheme.primary,
-                unselectedItemColor: Color.fromARGB(
-                  (0.6 * 255).round(),
-                  Theme.of(context).colorScheme.onSurface.r.toInt(),
-                  Theme.of(context).colorScheme.onSurface.g.toInt(),
-                  Theme.of(context).colorScheme.onSurface.b.toInt(),
-                ),
+                selectedItemColor: selectedColor,
+                unselectedItemColor: unselectedColor,
+                backgroundColor: navBarBackgroundColor,
                 onTap: (index) {
                   tabProvider.setTabIndex(index);
                 },

@@ -9,6 +9,7 @@ class TaskProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final List<Task> _tasks = [];
   final _logger = Logger();
+  String _currentQuery = ''; // Added for search
 
   List<Task> get tasks => _tasks;
   List<Task> get activeTasks => _tasks.where((task) => !task.isCompleted).toList();
@@ -31,6 +32,23 @@ class TaskProvider with ChangeNotifier {
         sortedTasks.sort((a, b) => a.dueDateTime.compareTo(b.dueDateTime));
     }
     return sortedTasks;
+  }
+
+  // Getter for filtered tasks based on search query
+  List<Task> get filteredTasks {
+    var tasks = getSortedTasks('Due Date'); // Default sort for consistency
+    if (_currentQuery.isEmpty) {
+      return tasks;
+    }
+    return tasks.where((task) {
+      return task.title.toLowerCase().contains(_currentQuery.toLowerCase());
+    }).toList();
+  }
+
+  // Method to update search query
+  void searchTasks(String query) {
+    _currentQuery = query;
+    notifyListeners();
   }
 
   TaskProvider() {

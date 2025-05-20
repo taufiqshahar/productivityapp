@@ -16,6 +16,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black87;
+
     return AppBar(
       leading: showHomeButton
           ? IconButton(
@@ -27,7 +30,20 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       )
           : null,
       title: Text(title),
-      actions: actions ?? [],
+      actions: actions?.map((action) {
+        if (action is TextButton) {
+          // Ensure action.child is not null; provide a fallback if it is
+          final buttonChild = action.child ?? const SizedBox.shrink();
+          return TextButton(
+            onPressed: action.onPressed,
+            child: DefaultTextStyle(
+              style: TextStyle(color: textColor),
+              child: buttonChild,
+            ),
+          );
+        }
+        return action;
+      }).whereType<Widget>().toList() ?? [],
     );
   }
 
